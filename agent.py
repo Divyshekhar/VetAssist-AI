@@ -1,6 +1,8 @@
+import datetime
 import os
 from google import genai
 from dotenv import load_dotenv
+from calendar_service import IST
 from tools import book_appointment
 from memory import get_history, save_message
 from google.genai import types
@@ -10,37 +12,65 @@ load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-book_appointment_tool = {
-    "name": "book_appointment",
-    "description": "Books a veterinary appointment for a pet",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "owner_name": {
-                "type": "string",
-                "description": "Name of the pet owner"
-            },
-            "pet_name": {
-                "type": "string",
-                "description": "Name of the pet"
-            },
-            "date": {
-                "type": "string",
-                "description": "Appointment date"
-            },
-            "time": {
-                "type": "string",
-                "description": "Appointment time"
-            }
+book_tool = types.FunctionDeclaration(
+    name="book_appointment",
+    description="Books a veterinary appointment for a pet",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,  
+        properties={
+            "owner_name": types.Schema(
+                type=types.Type.STRING,  
+                description="Name of the pet owner"
+            ),
+            "pet_name": types.Schema(
+                type=types.Type.STRING,
+                description="Name of the pet"
+            ),
+            "date": types.Schema(
+                type=types.Type.STRING,
+                description="Appointment date"
+            ),
+            "time": types.Schema(
+                type=types.Type.STRING,
+                description="Appointment time"
+            ),
         },
-        "required": ["owner_name", "pet_name", "date", "time"]
-    }
-}
+        required=["owner_name", "pet_name", "date", "time"]
+    )
+)
 
+# book_appointment_tool = {
+#     "name": "book_appointment",
+#     "description": "Books a veterinary appointment for a pet",
+#     "parameters": {
+#         "type": "object",
+#         "properties": {
+#             "owner_name": {
+#                 "type": "string",
+#                 "description": "Name of the pet owner"
+#             },
+#             "pet_name": {
+#                 "type": "string",
+#                 "description": "Name of the pet"
+#             },
+#             "date": {
+#                 "type": "string",
+#                 "description": "Appointment date"
+#             },
+#             "time": {
+#                 "type": "string",
+#                 "description": "Appointment time"
+#             }
+#         },
+#         "required": ["owner_name", "pet_name", "date", "time"]
+#     }
+# }
 
+todays_date = datetime.datetime.now(IST)
 SYSTEM_PROMPT ="""
 You are a veterinary assistant.
-
+Today's date and time is {todays_date}.
+You can not book an appointment before the time and date that is provided above that is {todays_date}.
 You have access to a tool:
 - book_appointment(owner_name, pet_name, date, time)
 
@@ -135,7 +165,7 @@ def run_agent(session_id, user_message):
     print("\n--- PROMPT ---\n", messages)
 
     # 🔹 Attach tool
-    tools = types.Tool(function_declarations=[book_appointment_tool])
+    tools = types.Tool(function_declarations=[book_tool])
     config = types.GenerateContentConfig(tools=[tools])
 
     try:
@@ -153,7 +183,7 @@ def run_agent(session_id, user_message):
         print("Error generating content:", e)
         raise HTTPException(status_code=500, detail="❌ Failed to generate AI response.")
     # 🔥 IMPORTANT: Check if tool call exists
-    if response.candidates and response.candidates[0].content.parts:
+    if ( response.candidates and response.candidates[0].content and response.candidates[0].content.parts ):
         parts = response.candidates[0].content.parts[0]
 
         # ✅ TOOL CALL DETECTED
@@ -161,7 +191,7 @@ def run_agent(session_id, user_message):
             func_call = parts.function_call
 
             tool_name = func_call.name
-            args = dict(func_call.args)
+            args = func_call.args or {}
 
             print("\n--- TOOL CALL ---\n", tool_name, args)
 
@@ -186,9 +216,6 @@ def run_agent(session_id, user_message):
                     raise HTTPException(status_code=429, detail="⚠️ AI response delayed due to quota limits. Please try again later.")
                 final_text = str(result)  # fallback to raw tool result
             
-
-            final_text = followup.text
-
             save_message(session_id, "assistant", final_text)
             return final_text
 
