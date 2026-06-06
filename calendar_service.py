@@ -1,3 +1,4 @@
+from typing import Any, Dict, NotRequired, TypedDict
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import dateparser
@@ -7,6 +8,12 @@ import pytz
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 SERVICE_ACCOUNT_FILE = 'vet-agent-493414-ca8ade63048e.json'
+
+
+class EventResult(TypedDict):
+    success: bool
+    message: str
+    event_link: NotRequired[str]
 
 
 credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
@@ -37,10 +44,13 @@ def find_next_slot(start_dt):
         if is_slot_available(start_dt, end_dt):
             return start_dt
 
-def create_event(owner_name, pet_name, date_str, time_str):
+def create_event(owner_name, pet_name, date_str, time_str) -> EventResult :
     dt = dateparser.parse(f"{date_str} {time_str}")
     if not dt:
-        return "❌ Invalid date/time format. Please try again."
+        return {
+            "success": False,
+            "message": "❌ Invalid date/time format. Please try again."
+        }
 
     dt = IST.localize(dt)
 
