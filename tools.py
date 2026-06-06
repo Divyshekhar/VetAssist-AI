@@ -11,6 +11,7 @@ def book_appointment(owner_name, pet_name, date, time):
     result = create_event(owner_name, pet_name, date, time)
     if result["success"]:
         save_appointment(appointment_data)
+        event_link = result.get("event_link", "No Event link present")
         return f"""
         ✅ Appointment booked!
 
@@ -19,7 +20,7 @@ def book_appointment(owner_name, pet_name, date, time):
         📅 Date: {date}
         ⏰ Time: {time}
 
-        📍 Event: {result['event_link']}
+        📍 Event: {event_link}
         """
     else:
         return result["message"]
