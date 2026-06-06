@@ -54,6 +54,7 @@ vet-ai-assistant/
 ├── memory.py
 ├── tools.py
 ├── credentials.json
+├── pyproject.toml
 ├── .env
 ├── requirements.txt
 ├── README.md
