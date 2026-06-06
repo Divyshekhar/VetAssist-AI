@@ -47,20 +47,15 @@ An AI-powered veterinary assistant built with **Python**, **FastAPI**, **Google 
 
 ```text
 vet-ai-assistant/
-│
-├── app/
-│   ├── main.py
-│   ├── routes/
-│   ├── services/
-│   ├── models/
-│   └── utils/
-│
-├── credentials/
-│   └── credentials.json
-│
+├── main.py
+├── agent.py
+├── calendar_service.py
+├── db.py
+├── memory.py
+├── tools.py
+├── credentials.json
 ├── .env
-├── pyproject.toml
-├── uv.lock
+├── requirements.txt
 ├── README.md
 └── .gitignore
 ```
@@ -81,8 +76,8 @@ vet-ai-assistant/
 ### Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd vet-ai-assistant
+git clone https://github.com/Divyshekhar/VetAssist-AI.git
+cd VetAssist-AI
 ```
 
 ### Install Dependencies Using uv
